@@ -10,14 +10,14 @@
 
         Anything stored in heap memory has an identifier used to validate access. 
         The owner of a memory block holds a special pointer for direct access, while copies 
-        hold both a pointer and an identifier. When a copy attempts to access memory, it must 
-        first verify that its stored identifier matches the identifier of the content. 
-        This check ensures that copies cannot access deallocated or invalid memory.
+        holds a copy pointer containing a pointer and an identifier. When a copy attempts to 
+        access memory, it must first verify that its stored identifier matches the identifier 
+        of the content. This check ensures that copies cannot access deallocated or invalid memory.
 
-        Ownership can be transferred, where the previous owner becomes a copy, and deallocation 
-        sets the content identifier to an impossible value, preventing further access from any 
-        remaining copies. An increament-based ID generator, optimized by the compiler, manages identifiers 
-        to minimize overhead while maintaining memory safety.
+        Ownership can be transferred but never shared, and deallocation sets the content identifier to 
+        an impossible value, preventing further access from any remaining copies. An increament-based 
+        ID generator, optimized by the compiler, manages identifiers to minimize overhead while maintaining 
+        memory safety.
 
         This document demonstrates all syntax in Kevlar.
 */
@@ -196,6 +196,7 @@ Type1 | Type2 | Type3 unionTypeVar;
     scope capture bracket is optional. If not specified, compiler will automaticly capture scope
     Auto-captured variables follow this rule: all primaries are pass by value, and any references 
     are pass by reference.
+    auto can be specified in capturing bracket to allow implicit capturing
 */
 (int param1, String param2)<int> => {
     // do something
@@ -237,7 +238,7 @@ drop func;      // this deletes the owner variable and therefore the heap memory
 //foo(0, funcCopy);         // this will crash the program since funcCopy's owner is deallocated
 
 /*
-    You can skip copy pointer checking for better performance
+    You can skip copy pointer id checking for better performance
     THIS IS MEMORY UNSAFE, USE WITH CAUTION
 */
 //foo(0, (!direct funcCopy));          // causes undefined behaviour
@@ -250,9 +251,9 @@ String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership an
 newStr <- drop singleQuoteStr;                          // transfer ownership and deletes variable
 
 /*
-    content identifiers will eventually run out, requiring a global reset
+    content identifiers will eventually run out, requiring a global reset.
     During the reset, performance is reduced. Because of this, we allow
-    developers to indicate when will be the best time to do global reset.
+    developers to indicate when will be the best time to do the global reset.
 
     If there are no indication, global reset will be delayed as far as possible.
     
@@ -260,6 +261,7 @@ newStr <- drop singleQuoteStr;                          // transfer ownership an
     pointers reduces available id. When id pool reduce to a certain amount,
     global reset is needed to continue to ensure memory safety.
 
-    However the exact syntax isn't determined yet, check back later.
+    However the exact notation isn't determined yet, check back later.
 */
+
 
