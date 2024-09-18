@@ -73,7 +73,7 @@ use "path/to/kevlar" as { * };                        // destructure all
     
     type<size> name = value;
     
-    If no size is used, default values will be used instead which are shown below
+    If no size is specified, default values will be used instead which are shown below
 
     "auto" can be used to match operating system's architecture
 
@@ -86,6 +86,14 @@ uint<auto> unsignedInt = 0;
 dec<64b> decimal = 0.0;
 bool boolean = false;
 char character = 0!;        // explination mark forces type conversion, by default char stores the null character (unicode 0)
+//char character = 0(char)  // you can also specify the type to convert to
+
+/*
+    "type" is a primary type used internally to identify different variable types.
+    The code shown below is invalid as you cannot define a variable in "type",
+    it is intended to be used for runtime type checking.
+*/
+//type typeId;
 
 const int constant = 0;          
 
@@ -108,7 +116,14 @@ glob int global = 0;
 
     All primary types have their referenced type counterpart.
     Boxing/Unboxing will be done automaticly
-    Memory allocation is now passed as a parameter
+    Memory size is now passed as a parameter
+
+    Referenced variables are by default de-referenced when used, except for a few cases:
+    1. When assigning as value to another variable, this creates a copy pointer
+    2. When assigned a new value, this will pass the pointer
+    3. When passes as parameter, this creates a copy pointer
+    4. When used on comparason operators, this will instead compare pointer instead.
+       Comparing an owner pointer to copy pointer of the same heap memory returns true;
 */
 
 Object func = new Object();   // function constructor
@@ -131,17 +146,56 @@ String singleQuoteStr = 'abc';
 // union typing
 Type1 | Type2 | Type3 unionTypeVar;
 
+/*      OPERATORS       */ 
+/*
+        Assignment operators
+    Include all assignment operators in C++
+    <-          Transfer memory ownership
+    <~          Dereference and assign value
+    drop        Delete variable
+    ...         Spread operation
+    \=          Swap values
+
+        Arithmetic Operators
+    Include all Arithmetic operators in C++
+    **          Exponent
+    _/          Root
+
+        Comparason Operators
+    Include all Comparason Operators in C++
+
+        Logical Operators
+    Include all Logical Operators in C++
+
+        Bitwise Operators 
+    Include all bitwise operators in c++
+
+        Increment/Decrement Operators
+    Same as C++
+
+        Contional Operator
+    Same as C++
+
+        Type Operators
+    <value>!    Force type conversion based on context
+    (<type>)    Force type conversion to specified type
+
+*/
+
+
 /*      FLOW CONTROL    */
 // Kevlar uses the same set of logic statements as C, here we will skip them to save space
 
 /*
     Anonymous function is defined using this syntax:
-    [capture1, capture2](type param1, type param2)<returnType> {
+    [$passByValue, @passByReference, auto](type param1, type param2)<returnType> {
         // do something
         return someValue;
     }
     null can be used as a return type to indicate no return
-
+    scope capture bracket is optional. If not specified, compiler will automaticly capture scope
+    Auto-captured variables follow this rule: all primaries are pass by value, and any references 
+    are pass by reference.
 */
 (int param1, String param2)<int> => {
     // do something
@@ -157,6 +211,11 @@ Type1 | Type2 | Type3 unionTypeVar;
 */
 function null foo(int param1, Object param2){
     
+}
+
+// used for future testing
+function null println(Object value){
+    // implement print logic
 }
 
 /*      MEMORY MANAGEMENT     */
@@ -178,18 +237,29 @@ drop func;      // this deletes the owner variable and therefore the heap memory
 //foo(0, funcCopy);         // this will crash the program since funcCopy's owner is deallocated
 
 /*
-    You can skip copy pointer checking for slightly better performance
-    THIS MAKES PROGRAM MEMORY UNSAFE, USE WITH CAUTION
-
+    You can skip copy pointer checking for better performance
+    THIS IS MEMORY UNSAFE, USE WITH CAUTION
 */
 //foo(0, (!direct funcCopy));          // causes undefined behaviour
 
 
 
 // ownership can also be transfered
-doubleQuoteStr -> String newStr;                        // transfer ownership, original variable now holds a copy
-singleQuoteStr = "other value" -> String newSingleStr;  // transfer ownership and assign a new value
-drop singleQuoteStr -> newStr;                          // transfer ownership and deletes variable
+String newStr <- doubleQuoteStr;                        // transfer ownership, original variable now holds a copy
+String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership and assign a new value
+newStr <- drop singleQuoteStr;                          // transfer ownership and deletes variable
 
+/*
+    content identifiers will eventually run out, requiring a global reset
+    During the reset, performance is reduced. Because of this, we allow
+    developers to indicate when will be the best time to do global reset.
 
-// to be continued
+    If there are no indication, global reset will be delayed as far as possible.
+    
+    Reusing already allocated memory space is encuraged, as creating new
+    pointers reduces available id. When id pool reduce to a certain amount,
+    global reset is needed to continue to ensure memory safety.
+
+    However the exact syntax isn't determined yet, check back later.
+*/
+
