@@ -243,8 +243,6 @@ drop func;      // this deletes the owner variable and therefore the heap memory
 */
 //foo(0, (!direct funcCopy));          // causes undefined behaviour
 
-
-
 // ownership can also be transfered
 String newStr <- doubleQuoteStr;                        // transfer ownership, original variable now holds a copy
 String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership and assign a new value
@@ -258,10 +256,11 @@ newStr <- drop singleQuoteStr;                          // transfer ownership an
     If there are no indication, global reset will be delayed as far as possible.
     
     Reusing already allocated memory space is encuraged, as creating new
-    pointers reduces available id. When id pool reduce to a certain amount,
+    pointers consume available ids. When id pool reduce to a certain amount,
     global reset is needed to continue to ensure memory safety.
 
     However the exact notation isn't determined yet, check back later.
 */
 
-
+// reuse memory space
+newStr <~ "12345"
