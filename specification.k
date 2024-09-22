@@ -188,7 +188,7 @@ Type1 | Type2 | Type3 unionTypeVar;
 
 /*
     Anonymous function is defined using this syntax:
-    [$passByValue, @passByReference, auto](type param1, type param2)<returnType> {
+    [$passByValue, @passByReference, auto](type param1, type param2)<returnType> => {
         // do something
         return someValue;
     }
@@ -198,7 +198,7 @@ Type1 | Type2 | Type3 unionTypeVar;
     are pass by reference.
     auto can be specified in capturing bracket to allow implicit capturing
 */
-(int param1, String param2)<int> => {
+(int param1, String param2)<int<32B>> => {
     // do something
     return 1;
 }
@@ -224,14 +224,14 @@ function null println(Object value){
     Kevlin uses a unique runtime contentID-ownership system as mentioned in the start
     Every heap memory content have an id and an owner.
     When you assign a variable to a referenced variable, a copy pointer is assigned.
-    Copies have slight performance overhead when accessing
+    Copies have slight performance overhead when accessed
 */
 Object funcCopy = func;
 
 /*
-    Owner is responsible for the lifetime of the heap memory.
+    Owner variable is responsible for the lifetime of the heap memory.
     If owner no longer used, assigned a new value, or manually 
-    deallocated, its memory is freed. After that, attempt to use 
+    deallocated, its memory is freed. After that, an attempt to use 
     any copy will result in crashing.
 */
 drop func;      // this deletes the owner variable and therefore the heap memory
@@ -253,11 +253,12 @@ newStr <- drop singleQuoteStr;                          // transfer ownership an
     During the reset, performance is reduced. Because of this, we allow
     developers to indicate when will be the best time to do the global reset.
 
-    If there are no indication, global reset will be delayed as far as possible.
+    If there are no indication, global reset will be delayed as far as possible,
+    but it will happen inevitably. 
     
-    Reusing already allocated memory space is encuraged, as creating new
-    pointers consume available ids. When id pool reduce to a certain amount,
-    global reset is needed to continue to ensure memory safety.
+    Reusing already allocated memory space is encouraged, as creating new
+    pointers consumes available IDs. When id pool reduces to a certain amount,
+    a global reset will be performed to continue to ensure memory safety.
 
     However the exact notation isn't determined yet, check back later.
 */
