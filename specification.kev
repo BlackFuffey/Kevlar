@@ -19,6 +19,9 @@
         ID generator, optimized by the compiler, manages identifiers to minimize overhead while maintaining 
         memory safety.
 
+        However, unlike Rust's ownership system, Kevlar allows for multiple copy pointers to exist
+        concurrently, with both read and write access. This allows for much more flexibility.
+
         This document demonstrates all syntax in Kevlar.
 */
 
@@ -95,13 +98,8 @@ char character = 0!;        // explination mark forces type conversion, by defau
 */
 //type typeId;
 
+// define a constant
 const int constant = 0;          
-
-/*
-    Global variables is available anywhere in the file
-    regardless where you define it.
-*/
-glob int global = 0;
 
 // referenced types
 /*
@@ -128,23 +126,25 @@ glob int global = 0;
 
 Object func = new Object();   // function constructor
 Object liter = Object{         // literals consturctor
-    item1: ${item1},
-    item2: ${item2},
+    item1: item1,
+    item2: item2,
 
     /*
-        Custom literals means you can define your own syntax for constructing
+        Custom literals is where you can define your own syntax for constructing
         an object. It can be quite powerful if used right.
-        Only syntax a literal consturctor needs to respect are comments and escapes( ${} ) 
-        used to pass outside variables.
+
+        comments will still function normally in a custom literal constructor
     */
 }
+
+Function funcVar = () => {};    // create and store a lambda function, see section "FLOW CONTROL"
 
 // both double and single quotes can be used to define a string. They have different escapes.
 String doubleQuoteStr = "abc";
 String singleQuoteStr = 'abc';
 
 // union typing
-Type1 | Type2 | Type3 unionTypeVar;
+( Type1 | Type2 | Type3 ) unionTypeVar;
 
 /*      OPERATORS       */ 
 /*
@@ -158,8 +158,6 @@ Type1 | Type2 | Type3 unionTypeVar;
 
         Arithmetic Operators
     Include all Arithmetic operators in C++
-    **          Exponent
-    _/          Root
 
         Comparason Operators
     Include all Comparason Operators in C++
@@ -177,7 +175,7 @@ Type1 | Type2 | Type3 unionTypeVar;
     Same as C++
 
         Type Operators
-    <value>!    Force type conversion based on context
+    !           Force type conversion based on context
     (<type>)    Force type conversion to specified type
 
 */
@@ -192,8 +190,30 @@ Type1 | Type2 | Type3 unionTypeVar;
         // do something
         return someValue;
     }
-    null can be used as a return type to indicate no return
+
     scope capture bracket is optional. If not specified, compiler will automaticly capture scope
+
+    Full implicit capturing
+    (type param1)<returnType> => {
+        // do something
+        return someValue;
+    }
+
+    Return type can be implicit
+
+    Implicit return typing
+    (type param1) => {
+        // do something
+        return 1;
+    }
+
+    Implicit returning
+    (type param1) => Math.sqrt(param1);
+
+    If all above implicits are used, paranthesis around args can be removed
+    type param1 => Math.pow(param1, 3);
+
+    null can be used as a return type to indicate no return
     Auto-captured variables follow this rule: all primaries are pass by value, and any references 
     are pass by reference.
     auto can be specified in capturing bracket to allow implicit capturing
@@ -205,26 +225,26 @@ Type1 | Type2 | Type3 unionTypeVar;
 
 /*
     Regular function is defined like this:
-    function returnType name(type param1, type param2){
+    returnType name(type param1, type param2){
         // do something
     }
     A regular function only have access to global variables
 */
-function null foo(int param1, Object param2){
+null foo(int param1, Object param2){
     
 }
 
 // used for future testing
-function null println(Object value){
+null println(Object value){
     // implement print logic
 }
 
 /*      MEMORY MANAGEMENT     */
 /*
-    Kevlin uses a unique runtime contentID-ownership system as mentioned in the start
+    Kevlin uses a unique runtime content-identifier-ownership system as mentioned in the start
     Every heap memory content have an id and an owner.
     When you assign a variable to a referenced variable, a copy pointer is assigned.
-    Copies have slight performance overhead when accessed
+    When a copy pointer is accessed, it will first check it's own content id against the one stored in memory.
 */
 Object funcCopy = func;
 
@@ -241,11 +261,11 @@ drop func;      // this deletes the owner variable and therefore the heap memory
     You can skip copy pointer id checking for better performance
     THIS IS MEMORY UNSAFE, USE WITH CAUTION
 */
-//foo(0, (!direct funcCopy));          // causes undefined behaviour
+//foo(0, (DIRECT funcCopy));          // causes undefined behaviour
 
 // ownership can also be transfered
-String newStr <- doubleQuoteStr;                        // transfer ownership, original variable now holds a copy
-String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership and assign a new value
+String newStr <- doubleQuoteStr;                        // transfer ownership, original variable now holds a copy pointer
+String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership and assign a new value to original variable
 newStr <- drop singleQuoteStr;                          // transfer ownership and deletes variable
 
 /*
@@ -260,8 +280,101 @@ newStr <- drop singleQuoteStr;                          // transfer ownership an
     pointers consumes available IDs. When id pool reduces to a certain amount,
     a global reset will be performed to continue to ensure memory safety.
 
-    However the exact notation isn't determined yet, check back later.
+    When a global reset is performed, program will run through the entire stack memory,
+    collect any pointers, and assign them along with their heap content a new id.
+    When assigning heap content new IDs, they will be scanned for any existing pointer,
+    and the process repeats.
+
+    During a global reset, any attempt to access a copy pointer exclude the ones using DIRECT
+    will be routed through a table of already reset pointers. If the pointer is not
+    found in the table, reset for that pointer will be first performed before allowing for access.
 */
 
 // reuse memory space
-newStr <~ "12345"
+newStr <~ "Hello World!";
+
+// this marks this specific place in program to be ideal for a global reset to start.
+Process.allowReset();
+
+
+/*      CLASSES      */
+
+// define a class that inheritant another class
+class ExampleClass extends AbstractClass implements MyInteface{
+    
+    /*
+        Variables and functions (other than the constructors) in 
+        classes are private by default.
+        they can be made public by adding the keyword "expose"
+        before definition
+    */
+
+    // private variable
+    int privVar
+
+    // public variable
+    expose const int pubVar
+
+    // static public variable
+    expose static int statPubVar;
+
+    // private function
+    int privFunc(dec param1) {
+        return 1;
+    }
+
+    // public function
+
+    expose int pubFunc() {
+        return 1;
+    }
+
+    // function constructor
+    constructor(){
+
+        // you can call the parent contructor
+        super();
+        
+    }
+
+    // literal constructor
+    literal(){
+        /*
+            Literal constructors are not executed on runtime.
+            Instead, they are executed by the compiler through
+            all literal constructor calls when compiling.
+            Their job is to evaluate the object literals as strings,
+            and call the actual constructor to construct the class instance.
+        */
+    }
+
+}
+
+// define an abstract class
+abstract class AbstractClass {
+    
+    // unimplemented function (must be implemented when inheritanted)
+    int privFunc(dec param1);
+    
+    constructor(){
+        
+    }
+
+    literal(){ }
+}
+
+// define an interface
+interface MyInterface{
+    
+    int privVar;
+
+    expose int pubVar;
+
+    expose int pubFunc();
+
+    // constructors are not allowed in an interface
+
+}
+
+// you can use the expose keyword outside of a class to expose a variable, class, or function
+expose ExampleClass;
