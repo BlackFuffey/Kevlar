@@ -5,7 +5,7 @@
         aims to combine great flexibility while providing
         high performance and memory safety.
         
-        Kevlar uses a runtime contentID-ownership memory management system to ensure memory 
+        Kevlar uses a runtime content-id memory management system to ensure memory 
         safety while keeping flexibility and performance.
 
         Anything stored in heap memory has an identifier used to validate access. 
