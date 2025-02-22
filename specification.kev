@@ -1,21 +1,21 @@
 
 /*
-        Welcome to the Kevlar langauge specification!
-        Kevlar is a high level programming langauge that
+        Welcome to the Kevlar language specification!
+        Kevlar is a high-level programming language that
         aims to combine great flexibility while providing
         high performance and memory safety.
         
         Kevlar uses a runtime content-id memory management system to ensure memory 
         safety while keeping flexibility and performance.
 
-        Anything stored in heap memory has an identifier used to validate access. 
+        Anything stored in memory has an identifier used to validate access. 
         The owner of a memory block holds a special pointer for direct access, while copies 
-        holds a copy pointer containing a pointer and an identifier. When a copy attempts to 
-        access memory, it must first verify that its stored identifier matches the identifier 
-        of the content. This check ensures that copies cannot access deallocated or invalid memory.
+        hold a copy pointer containing a memory address and an identifier. When a copy attempts to 
+        access memory, it must first verify its stored identifier against the content identifier.
+        This check ensures that copies cannot access deallocated or invalid memory.
 
         Ownership can be transferred but never shared, and deallocation sets the content identifier to 
-        an impossible value, preventing further access from any remaining copies. An increament-based 
+        an impossible value, preventing further access from any remaining copies. An increment-based 
         ID generator, optimized by the compiler, manages identifiers to minimize overhead while maintaining 
         memory safety.
 
@@ -41,12 +41,13 @@
 */
 
 /*      IMPORTS       */
+// Module system may be revamped in the future
 
 // import a kevlar file in project
 use "@/path/to/file";            // absolute path
 use "./path/to/file";            // relative path
 
-// import a kevlar file in environment
+// import a Kevlar file in the environment
 use "kevlar/std";
 
 // import as another name
@@ -56,37 +57,38 @@ use "path/to/kevlar" as Foo;
 use "path/to/kevlar" as { item1, item2, item3 };      // only keep specific items
 use "path/to/kevlar" as { * };                        // destructure all
 
-// kevlar/core is automaticly imported and destructured
+// kevlar/core is automatically imported and destructured
 //use "kevlar/core" as { * }
 
 
 /*      VARIABLES       */
 /*
-    A variable is defined using one the following format
+    A variable is defined using one of the following format
     type name = value;
     type name;
 
-    for the second way, a default value will be used instead. every variable definiton in this part uses the default value
+    for the second way, a default value will be used instead. 
+    The following example variable definition uses the default value
 */
 
 // primary types
 
 /*
-    you can specify allocated size for numeric primary types like this
+    you can specify an allocated size for numeric primary types like this
     
     type<size> name = value;
     
     If no size is specified, default values will be used instead which are shown below
 
-    "auto" can be used to match operating system's architecture
+    "auto" can be used to match the operating system's architecture
 
-    Automatic type conversion happens when the conversion is lossless (e.g. int to dec)
-    Non-lossless conversions needs to be forced (e,g, int to bool)
+    Implicit type conversion happens when the conversion is lossless (e.g. int to float)
+    Lossy conversions needs to be forced (e,g, float to int)
 */
 
 int<auto> integer = 0;
 uint<auto> unsignedInt = 0;
-dec<64b> decimal = 0.0;
+dec<64> decimal = 0.0;
 bool boolean = false;
 char character = 0!;        // explination mark forces type conversion, by default char stores the null character (unicode 0)
 //char character = 0(char)  // you can also specify the type to convert to
@@ -103,24 +105,26 @@ const int constant = 0;
 
 // referenced types
 /*
-    There are two kinds of constructor: Function and Literal
-    Function constructor is a function that returns the constructed object
+    There are two kinds of constructors: Function and Literal
+    A function constructor is a function that returns the constructed object
     Literal constructor allows you to use custom literals to define
     more complex objects while keeping good readability.
+
+    This allow other smaller-scale languages to be embedded in Kevlar code.
+    (e.g. HTML, SQL Queries, RegEx)
 
     See CLASS section for details
 
     If a referenced type is not assigned a value, it will default to null.
 
     All primary types have their referenced type counterpart.
-    Boxing/Unboxing will be done automaticly
     Memory size is now passed as a parameter
 
     Referenced variables are by default de-referenced when used, except for a few cases:
     1. When assigning as value to another variable, this creates a copy pointer
     2. When assigned a new value, this will pass the pointer
     3. When passes as parameter, this creates a copy pointer
-    4. When used on comparason operators, this will instead compare pointer instead.
+    4. When used on comparison operators, this will instead compare pointers instead.
        Comparing an owner pointer to copy pointer of the same heap memory returns true;
 */
 
@@ -128,14 +132,8 @@ Object func = new Object();   // function constructor
 Object liter = Object{         // literals consturctor
     item1: item1,
     item2: item2,
-
-    /*
-        Custom literals is where you can define your own syntax for constructing
-        an object. It can be quite powerful if used right.
-
-        comments will still function normally in a custom literal constructor
-    */
 }
+
 
 Function funcVar = () => {};    // create and store a lambda function, see section "FLOW CONTROL"
 
@@ -218,7 +216,7 @@ String singleQuoteStr = 'abc';
     are pass by reference.
     auto can be specified in capturing bracket to allow implicit capturing
 */
-(int param1, String param2)<int<32B>> => {
+(int param1, String param2)<int<32>> => {
     // do something
     return 1;
 }
@@ -270,24 +268,24 @@ newStr <- drop singleQuoteStr;                          // transfer ownership an
 
 /*
     content identifiers will eventually run out, requiring a global reset.
-    During the reset, performance is reduced. Because of this, we allow
+    During the reset, performance may be impacted. Because of this, we allow
     developers to indicate when will be the best time to do the global reset.
 
-    If there are no indication, global reset will be delayed as far as possible,
+    If there are no indication, global reset will be delayed as much as possible,
     but it will happen inevitably. 
     
     Reusing already allocated memory space is encouraged, as creating new
     pointers consumes available IDs. When id pool reduces to a certain amount,
     a global reset will be performed to continue to ensure memory safety.
 
-    When a global reset is performed, program will run through the entire stack memory,
-    collect any pointers, and assign them along with their heap content a new id.
-    When assigning heap content new IDs, they will be scanned for any existing pointer,
+    When a global reset is performed, the program will run through the entire memory,
+    collect any pointers, and assign them along with their respective content a new id.
+    When assigning content new IDs, they will be scanned for any existing pointer too,
     and the process repeats.
 
-    During a global reset, any attempt to access a copy pointer exclude the ones using DIRECT
+    During a global reset, access of copy pointer exclude the ones using DIRECT
     will be routed through a table of already reset pointers. If the pointer is not
-    found in the table, reset for that pointer will be first performed before allowing for access.
+    found in the table, that pointer will be reset before accessing content.
 */
 
 // reuse memory space
@@ -298,6 +296,8 @@ Process.allowReset();
 
 
 /*      CLASSES      */
+
+// Note that any OOB related features are not fixed and may be changed in the future
 
 // define a class that inheritant another class
 class ExampleClass extends AbstractClass implements MyInteface{
@@ -376,5 +376,4 @@ interface MyInterface{
 
 }
 
-// you can use the expose keyword outside of a class to expose a variable, class, or function
-expose ExampleClass;
+// To be continued...
