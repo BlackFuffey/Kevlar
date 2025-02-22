@@ -77,7 +77,7 @@ use "path/to/kevlar" as { * };                        // destructure all
 /*
     you can specify an allocated size for numeric primary types like this
     
-    type<bit> name = value;
+    type<size> name = value;
     
     If no size is specified, default values will be used instead which are shown below
 
@@ -302,7 +302,7 @@ Object funcCopy = func;
     any copy will result in crashing.
 */
 drop func;      // this deletes the owner variable and therefore the memory content
-//foo(0, funcCopy);         // this will crash the program since funcCopy's owner is deallocated
+//foo(0, funcCopy);         // this will assertion fault the program since func is deallocated
 
 /*
     You can skip copy pointer id checking for better performance
