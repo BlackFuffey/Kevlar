@@ -125,7 +125,7 @@ const int constant = 0;
     2. When assigned a new value, this will pass the pointer
     3. When passes as parameter, this creates a copy pointer
     4. When used on comparison operators, this will instead compare pointers instead.
-       Comparing an owner pointer to copy pointer of the same heap memory returns true;
+       Comparing an owner pointer to copy pointer of the same piece content returns true;
 */
 
 Object func = new Object();   // function constructor
@@ -240,19 +240,19 @@ null println(Object value){
 /*      MEMORY MANAGEMENT     */
 /*
     Kevlin uses a unique runtime content-identifier-ownership system as mentioned in the start
-    Every heap memory content have an id and an owner.
+    Every memory content have an id and an owner unless specificly opted out.
     When you assign a variable to a referenced variable, a copy pointer is assigned.
     When a copy pointer is accessed, it will first check it's own content id against the one stored in memory.
 */
 Object funcCopy = func;
 
 /*
-    Owner variable is responsible for the lifetime of the heap memory.
+    Owner variable is responsible for the lifetime of the content.
     If owner no longer used, assigned a new value, or manually 
     deallocated, its memory is freed. After that, an attempt to use 
     any copy will result in crashing.
 */
-drop func;      // this deletes the owner variable and therefore the heap memory
+drop func;      // this deletes the owner variable and therefore the memory content
 //foo(0, funcCopy);         // this will crash the program since funcCopy's owner is deallocated
 
 /*
