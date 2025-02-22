@@ -20,7 +20,8 @@
         memory safety.
 
         However, unlike Rust's ownership system, Kevlar allows for multiple copy pointers to exist
-        concurrently, with both read and write access. This allows for much more flexibility.
+        concurrently, with both read and write access. This allows for much more flexibility and
+        less boilerplate code.
 
         This document demonstrates all syntax in Kevlar.
 */
@@ -86,12 +87,37 @@ use "path/to/kevlar" as { * };                        // destructure all
     Lossy conversions needs to be forced (e,g, float to int)
 */
 
-int<auto> integer = 0;
-uint<auto> unsignedInt = 0;
-dec<64> decimal = 0.0;
+int<32> integer = 0;
+uint<32> unsignedInt = 0;
+float<32> floatingPoint = 0.0;
 bool boolean = false;
 char character = 0!;        // explination mark forces type conversion, by default char stores the null character (unicode 0)
 //char character = 0(char)  // you can also specify the type to convert to
+
+/*
+    For floats, you can either pick from a preset memory layout following
+    the IEEE 745 standard:
+
+    ╔═══════════╦══════╦══════╦══════════╦══════════╗
+    ║ Precision ║ Size ║ Sign ║ Exponent ║ Fraction ║
+    ╠═══════════╬══════╬══════╬══════════╬══════════╣
+    ║      Half ║  16  ║   1  ║    5     ║    10    ║
+    ╠═══════════╬══════╬══════╬══════════╬══════════╣
+    ║    Single ║  32  ║   1  ║    8     ║    23    ║
+    ╠═══════════╬══════╬══════╬══════════╬══════════╣
+    ║    Double ║  64  ║   1  ║    11    ║    52    ║
+    ╠═══════════╬══════╬══════╬══════════╬══════════╣
+    ║ Quadruple ║  128 ║   1  ║    15    ║    112   ║
+    ╚═══════════╩══════╩══════╩══════════╩══════════╝
+
+    Or you can make your own layout using this format:
+    
+    float<sign,exponent,fraction>  bar;
+
+    For example, to have an unsigned half-precision float:
+
+    float<0,5,11> foo = 12.5;
+*/
 
 /*
     "type" is a primary type used internally to identify different variable types.
