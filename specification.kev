@@ -76,7 +76,7 @@ use "path/to/kevlar" as { * };                        // destructure all
 /*
     you can specify an allocated size for numeric primary types like this
     
-    type<size> name = value;
+    type<bit> name = value;
     
     If no size is specified, default values will be used instead which are shown below
 
@@ -129,7 +129,7 @@ const int constant = 0;
 */
 
 Object func = new Object();   // function constructor
-Object liter = Object{         // literals consturctor
+Object liter = Object {         // literals consturctor
     item1: item1,
     item2: item2,
 }
@@ -184,17 +184,33 @@ String singleQuoteStr = 'abc';
 
 /*
     Anonymous function is defined using this syntax:
-    [$passByValue, @passByReference, auto](type param1, type param2)<returnType> => {
+    [@captureByReference, %captureByValue](type param1, type param2)<returnType> => {
         // do something
-        return someValue;
+        retvar = someValue;
+        return;
     }
 
-    scope capture bracket is optional. If not specified, compiler will automaticly capture scope
+    Capture all by reference:
+    [@](type param1, type param2)<returnType> => {
+        // do something
+        retvar = someValue;
+        return;
+    }
+
+    Capture all by value:
+    [%](type param1, type param2)<returnType> => {
+        // do something
+        retvar = someValue;
+        return;
+    }
+
+    If implicitly captured, primary variables will be captured by value and objects will be captured by reference.
 
     Full implicit capturing
     (type param1)<returnType> => {
         // do something
-        return someValue;
+        retvar = someValue;
+        return;
     }
 
     Return type can be implicit
@@ -202,7 +218,8 @@ String singleQuoteStr = 'abc';
     Implicit return typing
     (type param1) => {
         // do something
-        return 1;
+        retvar = 1;
+        return;
     }
 
     Implicit returning
@@ -211,25 +228,31 @@ String singleQuoteStr = 'abc';
     If all above implicits are used, paranthesis around args can be removed
     type param1 => Math.pow(param1, 3);
 
+    Notice how the return value is assigned to the variable "retvar" instead of as an arg for the return keyword?
+    In Kevlar, functions always returns by output parameter to ensure maximum memory efficiency.
+    If the returned value is not used by the caller, retval will act as a regular local variable.
+
     null can be used as a return type to indicate no return
     Auto-captured variables follow this rule: all primaries are pass by value, and any references 
     are pass by reference.
-    auto can be specified in capturing bracket to allow implicit capturing
 */
+
 (int param1, String param2)<int<32>> => {
     // do something
-    return 1;
+    retvar = 1;
+    return;
 }
 
 /*
     Regular function is defined like this:
     returnType name(type param1, type param2){
         // do something
+        retvar = returnValue;
     }
     A regular function only have access to global variables
 */
 null foo(int param1, Object param2){
-    
+    // do something
 }
 
 // used for future testing
@@ -330,7 +353,7 @@ class ExampleClass extends AbstractClass implements MyInteface{
     }
 
     // function constructor
-    constructor(){
+    #constructor(){
 
         // you can call the parent contructor
         super();
@@ -338,7 +361,7 @@ class ExampleClass extends AbstractClass implements MyInteface{
     }
 
     // literal constructor
-    literal(){
+    #literal(){
         /*
             Literal constructors are not executed on runtime.
             Instead, they are executed by the compiler through
@@ -347,7 +370,15 @@ class ExampleClass extends AbstractClass implements MyInteface{
             and call the actual constructor to construct the class instance.
         */
     }
-
+    
+    // customly implemented operators
+    int #operator+(ExampleClass var1, ExampleClass var2){ return 0; }
+    // this is supported for all operators available
+    
+    // implement declarative foreach loop
+    #iterator(Function iterate){
+        iterate([0]);
+    }
 }
 
 // define an abstract class
