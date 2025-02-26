@@ -6,13 +6,7 @@
         high performance and memory safety.
         
         Kevlar uses a runtime content-id memory management system to ensure memory 
-        safety while keeping flexibility and performance.
-
-        Anything stored in memory has an identifier used to validate access. 
-        The owner of a memory block holds a special pointer for direct access, while copies 
-        hold a copy pointer containing a memory address and an identifier. When a copy attempts to 
-        access memory, it must first verify its stored identifier against the content identifier.
-        This check ensures that copies cannot access deallocated or invalid memory.
+        safety while keeping flexibility and performance. See MEMORY MANAGEMENT Section for detail.
 
         Ownership can be transferred but never shared, and deallocation sets the content identifier to 
         an impossible value, preventing further access from any remaining copies. An increment-based 
@@ -288,59 +282,83 @@ null println(Object value){
 
 /*      MEMORY MANAGEMENT     */
 /*
-    Kevlin uses a unique runtime content-identifier-ownership system as mentioned in the start
-    Every memory content have an id and an owner unless specificly opted out.
-    When you assign a variable to a referenced variable, a copy pointer is assigned.
-    When a copy pointer is accessed, it will first check it's own content id against the one stored in memory.
+    Kevlin uses a unique runtime content-identifier-ownership system to ensure memory safety.
+    Every memory content has an ID and an owner unless specifically opted out via the unsafe keyword.
+    When the memory is deallocated, the memory content's ID will be set to an impossible value and then deallocated.
+    When you assign a variable to a referenced variable, a copy pointer with a copy of the content ID is assigned.
+    When a copy pointer is accessed, it will first check its own ID against the one stored in content. 
+    If the ID does not match, program crashes.
+
+    If attempts to use after free, one of three things will happen depending on the situation:
+        - Memory still in address space but has not been reused: ID check fails due to the impossible value.
+        - Memory has been reused to store other content: ID check has a statistically impossible chance of colliding with the new content.
+        - Memory has been reclaimed by OS: Segmentation fault.
+
+    All three ensures no undefined behaviour.
+
+    Some may have concerns regarding CPU branching overhead when accessing copy pointers. 
+    This is mitigated via multiple strategies including:
+        - Compiler will identify unnessesary checks and skip them.
+        - Compiler will always put the regular program path as the hot path.
+        - CPU's branching prediction will take care of the rest.
 */
 Object funcCopy = func;
 
 /*
     Owner variable is responsible for the lifetime of the content.
-    If owner no longer used, assigned a new value, or manually 
+    If owner is no longer used, assigned a new value, or manually 
     deallocated, its memory is freed. After that, an attempt to use 
-    any copy will result in crashing.
+    any copy will result in either seg fault or content id mismatch.
 */
 drop func;      // this deletes the owner variable and therefore the memory content
 //foo(0, funcCopy);         // this will assertion fault the program since func is deallocated
 
 /*
-    You can skip copy pointer id checking for better performance
+    You can skip copy pointer ID checking for better performance
     THIS IS MEMORY UNSAFE, USE WITH CAUTION
 */
-//foo(0, (DIRECT funcCopy));          // causes undefined behaviour
+//foo(0, (unsafe funcCopy));          // causes undefined behaviour
 
-// ownership can also be transfered
+// ownership can also be transferred
 String newStr <- doubleQuoteStr;                        // transfer ownership, original variable now holds a copy pointer
 String newSingleStr <- singleQuoteStr = "other value";  // transfer ownership and assign a new value to original variable
 newStr <- drop singleQuoteStr;                          // transfer ownership and deletes variable
 
 /*
     content identifiers will eventually run out, requiring a global reset.
-    During the reset, performance may be impacted. Because of this, we allow
+    During the reset, performance will be impacted greatly. Because of this, we allow
     developers to indicate when will be the best time to do the global reset.
 
-    If there are no indication, global reset will be delayed as much as possible,
+    If there are no indications, global reset will be delayed as much as possible,
     but it will happen inevitably. 
     
     Reusing already allocated memory space is encouraged, as creating new
-    pointers consumes available IDs. When id pool reduces to a certain amount,
+    pointers consumes available IDs. When ID pool reduces to a certain amount,
     a global reset will be performed to continue to ensure memory safety.
 
-    When a global reset is performed, the program will run through the entire memory,
-    collect any pointers, and assign them along with their respective content a new id.
-    When assigning content new IDs, they will be scanned for any existing pointer too,
-    and the process repeats.
+    When a global reset is performed, the program will scan the entire memory,
+    collect any previous-gen pointers (identified by metadata), and assign them 
+    along with their respective content a new ID. If the pointer is invalid, it 
+    will be set to a special value that directly fails ID check when accessed. 
+    When assigning content new IDs, they will be scanned of any existing pointers 
+    too, and the process repeats.
 
-    During a global reset, access of copy pointer exclude the ones using DIRECT
-    will be routed through a table of already reset pointers. If the pointer is not
-    found in the table, that pointer will be reset before accessing content.
+    During a global reset, access to previous-gen pointers, excluding unsafe ones, 
+    will be routed through a map of previous-gen pointers to current-gen pointers. 
+    if the previous-gen pointer is found in the map, it will be converted to
+    a current-gen pointer. If it's not found, the pointer and its content will be 
+    allocated a current-gen ID.
+
+    After a reset, the map will be deleted and program operation returns to normal.
+
+    This process is similar to a garbage collector cycle but executed a lot less 
+    frequently.
 */
 
 // reuse memory space
 newStr <~ "Hello World!";
 
-// this marks this specific place in program to be ideal for a global reset to start.
+// marks this specific place in program to be ideal for a global reset to start.
 Process.allowReset();
 
 
