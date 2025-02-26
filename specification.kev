@@ -291,14 +291,14 @@ null println(Object value){
 
     If attempts to use after free, one of three things will happen depending on the situation:
         - Memory still in address space but has not been reused: ID check fails due to the impossible value.
-        - Memory has been reused to store other content: ID check has a statistically impossible chance of colliding with the new content.
+        - Memory has been reused to store other content: ID check has a statistically impossible chance of colliding with the stored data.
         - Memory has been reclaimed by OS: Segmentation fault.
 
     All three ensures no undefined behaviour.
 
     Some may have concerns regarding CPU branching overhead when accessing copy pointers. 
-    This is mitigated via multiple strategies including:
-        - Compiler will identify unnessesary checks and skip them.
+    This is mitigated via some strategies including:
+        - Compiler will identify unnecessary checks and skip them.
         - Compiler will always put the regular program path as the hot path.
         - CPU's branching prediction will take care of the rest.
 */
