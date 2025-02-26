@@ -286,7 +286,7 @@ null println(Object value){
 
 /*      MEMORY MANAGEMENT     */
 /*
-    Kevlin uses a unique runtime content-identifier-ownership system to ensure memory safety.
+    Kevlar uses a unique runtime content-identifier-ownership system to ensure memory safety.
     Every memory content has an ID and an owner unless specifically opted out via the unsafe keyword.
     When the memory is deallocated, the memory content's ID will be set to an impossible value and then deallocated.
     When you assign a variable to a referenced variable, a copy pointer with a copy of the content ID is assigned.
