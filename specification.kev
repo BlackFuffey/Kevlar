@@ -64,6 +64,8 @@ use "path/to/kevlar" as { * };                        // destructure all
 
     for the second way, a default value will be used instead. 
     The following example variable definition uses the default value
+
+    "auto" can be used in place of type to automatically determine type from the assigned value
 */
 
 // primary types
@@ -87,6 +89,8 @@ float<32> floatingPoint = 0.0;
 bool boolean = false;
 char character = 0!;        // explination mark forces type conversion, by default char stores the null character (unicode 0)
 //char character = 0(char)  // you can also specify the type to convert to
+
+auto aFloat = 18.2;     // implicitly typed
 
 /*
     For floats, you can either pick from a preset memory layout following
@@ -360,6 +364,19 @@ newStr <~ "Hello World!";
 
 // marks this specific place in program to be ideal for a global reset to start.
 Process.allowReset();
+
+/*
+    Alternatively, Kevlar's standard library provide a special object that allows
+    multiple objects to share the same content ID, and be deallocated together.
+*/
+
+AtomicMemory am = AtomicMemory {
+    obj: new Object(),
+    str: "Some string",
+    func: () => { // do something }
+}
+
+auto { obj, str, func } = am.content;
 
 
 /*      CLASSES      */
