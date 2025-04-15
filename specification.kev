@@ -35,26 +35,64 @@
  *
 */
 
-/*      IMPORTS       */
-// Module system may be revamped in the future
+/*      MODULE SYSTEM       */
 
-// import a kevlar file in project
-use "@/path/to/file";            // absolute path
-use "./path/to/file";            // relative path
+/*  
+    Module aliases must always be explicitly stated to be used inside a project
+    Otherwise it will be treated as an execution only import.
 
-// import a Kevlar file in the environment
-use "kevlar/std";
+    A single file can be one of following:
+     - A single component (class, function, object, etc.)
+     - A module including multiple functions
 
-// import as another name
-use "path/to/kevlar" as Foo;
+    If it's the latter, other than exporting to the file's module,
+    components can also be exported to a namespace.
 
-// import and destructure
-use "path/to/kevlar" as { item1, item2, item3 };      // only keep specific items
-use "path/to/kevlar" as { * };                        // destructure all
+    see modules.kev for details
+*/
 
-// kevlar/core is automatically imported and destructured
-//use "kevlar/core" as { * }
+import *@/path/to/file* as Module1;            // absolute path
+import *./path/to/file* as Module2;            // relative path
 
+// import module from namespace
+import *#kevlar/sound* as { Mod1, Mod2, Mod3: Mod3Alias };
+
+// import all modules
+import *#kevlar/algorithm* as { * };
+import *#kevlar/async* as { *, AsyncExecutor: AsyncExe };
+
+// all imports will be statically analyzed and resolved on compile time
+// if there are duplicated identifiers via wildcard importing, an error will be thrown
+
+// or, import entire namespace
+import *#kevlar/crypt* as namespace Crypt
+
+// #kevlar/core is implicitly imported as following
+import *#kevlar/core* as { * }
+
+// to dynamically/lazy load a library:
+
+// first, import the driver for the shared object type.
+// for generic shared objects, use the driver for C (CLang)
+import *#kevlar/dl* as { CLang }
+
+// then, import the declaration file
+// declarations are stored in metadata, and therefore .kmt files
+import *@/declarations/libcrypt* as LibCryptDec
+
+// then, load the shared object
+*import <fd> as LibCrypt with CLang(/* pass options to driver here */) for LibCryptDec
+
+// or do so asynchronously
+Promise loadPromise = *import async <fd> as LibCrypt with CLang for LibCryptDec;
+loadPromise.await();
+
+// fd should be a valid runtime file descriptor object
+// orders for "as", "with" and "for" can be changed to your liking
+// this may throw errors that can be catched with a try-catch statement
+
+// this is not limited to just shared objects. it can theoretically handle anything
+// python, java, javascript, etc. as long as the driver supports it
 
 /*      VARIABLES       */
 /*
