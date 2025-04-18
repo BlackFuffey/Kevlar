@@ -51,48 +51,52 @@
     see modules.kev for details
 */
 
-import *@/path/to/file* as Module1;            // absolute path
-import *./path/to/file* as Module2;            // relative path
+import [ @/path/to/file ] as Module1;            // absolute path
+import [ ./path/to/file ] as Module2;            // relative path
 
 // import module from namespace
-import *#kevlar/sound* as { Mod1, Mod2, Mod3: Mod3Alias };
+import [ #kevlar/sound ] as { Mod1, Mod2, Mod3: Mod3Alias };
 
 // import all modules
-import *#kevlar/algorithm* as { * };
-import *#kevlar/async* as { *, AsyncExecutor: AsyncExe };
+import [ #kevlar/algorithm ] as { * };
+import [ #kevlar/async ] as { *, AsyncExecutor: AsyncExe };
 
 // all imports will be statically analyzed and resolved on compile time
 // if there are duplicated identifiers via wildcard importing, an error will be thrown
 
 // or, import entire namespace
-import *#kevlar/crypt* as namespace Crypt
+import [ #kevlar/crypt ] as namespace Crypt
 
 // #kevlar/core is implicitly imported as following
-import *#kevlar/core* as { * }
+import [ #kevlar/core ] as { * }
 
 // to dynamically/lazy load a library:
 
 // first, import the driver for the shared object type.
 // for generic shared objects, use the driver for C (CLang)
-import *#kevlar/dl* as { CLang }
+import [ #kevlar/dl ] as { CLang }
 
 // then, import the declaration file
 // declarations are stored in metadata, and therefore .kmt files
-import *@/declarations/libcrypt* as LibCryptDec
+import [ @/declarations/libcrypt ] as LibCryptDec
 
 // then, load the shared object
-*import <fd> as LibCrypt with CLang(/* pass options to driver here */) for LibCryptDec
+*import file_descriptor as LibCrypt with CLang(arg1, arg2) for LibCryptDec
 
 // or do so asynchronously
 Promise loadPromise = *import async <fd> as LibCrypt with CLang for LibCryptDec;
 loadPromise.await();
 
-// fd should be a valid runtime file descriptor object
-// orders for "as", "with" and "for" can be changed to your liking
-// this may throw errors that can be catched with a try-catch statement
 
-// this is not limited to just shared objects. it can theoretically handle anything
-// python, java, javascript, etc. as long as the driver supports it
+/*
+   file_descriptor should be a valid runtime file descriptor object.
+   The orders for "as", "with" and "for" can be arranged to your likings.
+   this may throw errors that can be catched with a try-catch statement
+
+   this is not limited to just shared objects. it can theoretically handle anything.
+   python, java, javascript, etc. as long as the driver supports it
+*/
+
 
 /*      VARIABLES       */
 /*
