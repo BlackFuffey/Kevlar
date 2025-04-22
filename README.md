@@ -21,11 +21,7 @@ Currently no langauge satisfy all 3:
 - JIT/Intepreted langauges is memory safe and (mostly) easy to use, but they are not suitable for performance crucial things. 
 - Swift is one of the very few langauges that nearly fullfills all 3. However reference counting still needs weak pointer to prevent deadlock, and therefore may not 100% memory safe and can be hard to use in some cases. Swift also has limited support on non Apple platforms
 
-Kevlar aims to solve this using it's own unique memory management system: Content ID. For details, see specification.kev.
-
-Other than the memory management system, Kevlar's syntax are also designed to be straightforward, clean, and flexible. 
-
-Another Kevlar's unique feature is custom literals, where you are able to define your own literal syntax to more verbosely create complex objects. These literals will be resolved at compile time, so there will be 0 performance impact on runtime.
+Kevlar aims to solve this using it's own unique memory management system: Content ID. For details, see specification.kev
 
 ## License
 WIP
