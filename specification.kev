@@ -100,14 +100,22 @@ loadPromise.await();
 
 /*      VARIABLES       */
 /*
-    A variable is defined using one of the following format
+    Variables can be defined using one of the following format
+    
     type name = value;
-    type name;
+    var name = value;           // type is inferred from value
+    var name: type = value;
 
-    for the second way, a default value will be used instead. 
+
+    Constants can be defined using one of the following format
+
+    const type name = value;
+    const name = value;         // type is inferred from value
+    const name: type = value;
+    
+    If type is not inferred from value, value can be omitted.
+    In that case, a default value will be used instead.
     The following example variable definition uses the default value
-
-    "auto" can be used in place of type to automatically determine type from the assigned value
 */
 
 // primary types
@@ -116,10 +124,11 @@ loadPromise.await();
     you can specify an allocated size for numeric primary types like this
     
     type<size> name = value;
+    var name: type<size> = value;
     
     If no size is specified, default values will be used instead which are shown below
 
-    "auto" can be used to match the operating system's architecture
+    "*" can be used to match the operating system's architecture
 
     Implicit type conversion happens when the conversion is lossless (e.g. int to float)
     Lossy conversions needs to be forced (e,g, float to int)
@@ -130,9 +139,7 @@ uint<32> unsignedInt = 0;
 float<32> floatingPoint = 0.0;
 bool boolean = false;
 char character = 0!;        // explination mark forces type conversion, by default char stores the null character (unicode 0)
-//char character = 0(char)  // you can also specify the type to convert to
-
-auto aFloat = 18.2;     // implicitly typed
+//char character = 0(char);  // you can also specify the type to convert to
 
 /*
     For floats, you can either pick from a preset memory layout following
@@ -152,7 +159,7 @@ auto aFloat = 18.2;     // implicitly typed
 
     Or you can make your own layout using this format:
     
-    float<sign,exponent,fraction>  bar;
+    float<sign,exponent,fraction> floatingPoint;
 
     For example, to have an unsigned half-precision float:
 
@@ -163,11 +170,10 @@ auto aFloat = 18.2;     // implicitly typed
     "type" is a primary type used internally to identify different variable types.
     The code shown below is invalid as you cannot define a variable in "type",
     it is intended to be used for runtime type checking.
+
+    
 */
 //type typeId;
-
-// define a constant
-const int constant = 0;          
 
 // referenced types
 /*
@@ -177,7 +183,9 @@ const int constant = 0;
     more complex objects while keeping good readability.
 
     This allow other smaller-scale languages to be embedded in Kevlar code.
-    (e.g. HTML, SQL Queries, RegEx)
+    (e.g. HTML, SQL, RegEx)
+
+    Or it can simply be used to make constructing complex objects readable
 
     See CLASS section for details
 
@@ -195,7 +203,7 @@ const int constant = 0;
 */
 
 Object func = new Object();   // function constructor
-Object liter = Object {         // literals consturctor
+Object liter = Object{         // literals consturctor
     item1: item1,
     item2: item2,
 }
