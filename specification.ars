@@ -1,11 +1,10 @@
-
 /*
-        Welcome to the Kevlar language specification!
-        Kevlar is a high-level programming language that
+        Welcome to the Arolyme language specification!
+        Arolyme is a high-level programming language that
         aims to combine great flexibility while providing
         high performance and memory safety.
         
-        Kevlar uses a runtime content-id memory management system to ensure memory 
+        Arolyme uses a runtime content-id memory management system to ensure memory 
         safety while keeping flexibility and performance. See MEMORY MANAGEMENT Section for detail.
 
         Ownership can be transferred but never shared, and deallocation sets the content identifier to 
@@ -13,11 +12,11 @@
         ID generator, optimized by the compiler, manages identifiers to minimize overhead while maintaining 
         memory safety.
 
-        However, unlike Rust's ownership system, Kevlar allows for multiple copy pointers to exist
+        However, unlike Rust's ownership system, Arolyme allows for multiple copy pointers to exist
         concurrently, with both read and write access. This allows for much more flexibility and
         less boilerplate code.
 
-        This document demonstrates all syntax in Kevlar.
+        This document demonstrates all syntax in Arolyme.
 */
 
 // This is a single line comment
@@ -35,6 +34,52 @@
  *
 */
 
+/*      AROLYME METADATA      */
+/*
+    Arolyme uses metadata to specify how the compiler should treat a file
+    (e.g. async executor, imports, module types, etc.)
+    Metadata can be specifies with one of two ways:
+        1. Inside a .amt (Arolyme Metadata) file with following syntax
+            metadata {
+                item1: value1,
+                item2: value2,
+                nested: {
+                    nestedItem1: nestedValue1,
+                    nestedItem2: nestedValue2
+                }
+            }
+
+
+        2. At the start of a .kev file with the same syntax as above,
+           or if you only need to specify one value:
+            metadata.item1 value1       // single value
+            metadata.nested {           // nested value
+                nestedItem1: nestedValue1 
+            }
+            metadata.nested.nestedItem1 nestedValue1
+
+    Arolyme Metadata has 5 value types:
+        1. Regular: denoted by "value"
+        2. Module: see MODULE SYSTEM for details
+        3. Object: denoted by { key1: value1, key2: value2  }
+        4. Array: denoted by ( value1, value2 )
+        5. Complex: denoted by < complex configuration >
+
+    One or multiple .kmt files can be used with the "from" property (Module or Array)
+    metadata.from [ @/path/to/kmt ]
+    metadata.from ( [ @/path/to/kmt1 ], [ @/path/to/kmt2 ] )
+
+    If multiple is specified, the latter kmt will override preceding ones
+    Finally, properties specified inline will override all kmt
+
+    Override behaviours for different types:
+        1. Regular: replaces
+        2. Module: replaces
+        3. Object: different key coexists, same key replaces
+        4. Array: joins, higher piority one comes first
+        5. Complex: Behaviour is handled by the interpreting compiler plugin
+*/
+
 /*      MODULE SYSTEM       */
 
 /*  
@@ -42,43 +87,62 @@
     Otherwise it will be treated as an execution only import.
 
     A single file can be one of following:
-     - A single component (class, function, object, etc.)
-     - A module including multiple functions
+     - A single component (class, function, object, or enum)
+     - A module including multiple components
+
+    file type can be specified in metadata.type (Regular),
+    can be either: class, function, object, enum, or module
 
     If it's the latter, other than exporting to the file's module,
     components can also be exported to a namespace.
 
-    see modules.kev for details
+    modules can be imported with metadata.using (Complex).
+    Syntax is as of following
 */
 
-import [ @/path/to/file ] as Module1;            // absolute path
-import [ ./path/to/file ] as Module2;            // relative path
+metadata.using <
+    [ @/path/to/file ] as Module1;          // absolute path
+    [ ./path/to/file ] as Module2;          // relative path
 
-// import module from namespace
-import [ #kevlar/sound ] as { Mod1, Mod2, Mod3: Mod3Alias };
+    // import module from namespace
+    [ #arolyme/sound ] as { Mod1, Mod2, Mod3: Mod3Alias };
 
-// import all modules
-import [ #kevlar/algorithm ] as { * };
-import [ #kevlar/async ] as { *, AsyncExecutor: AsyncExe };
+    // import all modules
+    [ #arolyme/algorithm ] as { * };
+    [ #arolyme/async ] as { *, AsyncLock };
 
-// all imports will be statically analyzed and resolved on compile time
-// if there are duplicated identifiers via wildcard importing, an error will be thrown
+    // or, import entire namespace
+    import [ #arolyme/crypt ] as namespace Crypt;
 
-// or, import entire namespace
-import [ #kevlar/crypt ] as namespace Crypt
+    // #arolyme/core is always implicitly imported as following
+    import [ #arolyme/core ] as { * };
 
-// #kevlar/core is implicitly imported as following
-import [ #kevlar/core ] as { * }
+    // all imports will be statically analyzed and resolved on compile time
+    // if there are duplicated identifiers via wildcard importing, an error will be thrown
+>
 
-// to dynamically/lazy load a library:
+/*
+    to dynamically/lazy load a library:
 
-// first, import the driver for the shared object type.
-// for generic shared objects, use the driver for C (CLang)
-import [ #kevlar/dl ] as { CLang }
+    first, import the driver for the shared object type.
+    
+    metadata.using <
+        [ #arolyme/ld ] as { CLang };
 
-// then, import the declaration file
-// declarations are stored in metadata, and therefore .kmt files
-import [ @/declarations/libcrypt ] as LibCryptDec
+        // then, import the declaration file
+        // declarations are stored in metadata, and therefore .kmt files
+
+        [ @/declarations/libcrypt ] as LibCryptDec;
+    >
+
+    then, load the shared object
+    loadexec {
+        from: fileDescriptor,
+        driver: CLang(arg1, arg2),
+
+        
+
+// metadata.using <  >
 
 // then, load the shared object
 *import file_descriptor as LibCrypt with CLang(arg1, arg2) for LibCryptDec
@@ -143,7 +207,7 @@ char character = 0!;        // explination mark forces type conversion, by defau
 
 /*
     For floats, you can either pick from a preset memory layout following
-    the IEEE 745 standard:
+    the IEEE 754 standard:
 
     ╔═══════════╦══════╦══════╦══════════╦══════════╗
     ║ Precision ║ Size ║ Sign ║ Exponent ║ Fraction ║
@@ -182,7 +246,7 @@ char character = 0!;        // explination mark forces type conversion, by defau
     Literal constructor allows you to use custom literals to define
     more complex objects while keeping good readability.
 
-    This allow other smaller-scale languages to be embedded in Kevlar code.
+    This allow other smaller-scale languages to be embedded in Arolyme code.
     (e.g. HTML, SQL, RegEx)
 
     Or it can simply be used to make constructing complex objects readable
@@ -254,7 +318,7 @@ String singleQuoteStr = 'abc';
 
 
 /*      FLOW CONTROL    */
-// Kevlar uses the same set of logic statements as C, here we will skip them to save space
+// Arolyme uses the same set of logic statements as C, here we will skip them to save space
 
 /*
     Anonymous function is defined using this syntax:
@@ -303,7 +367,7 @@ String singleQuoteStr = 'abc';
     type param1 => Math.pow(param1, 3);
 
     Notice how the return value is assigned to the variable "retvar" instead of as an arg for the return keyword?
-    In Kevlar, functions always returns by output parameter to ensure maximum memory efficiency.
+    In Arolyme, functions always returns by output parameter to ensure maximum memory efficiency.
     If the returned value is not used by the caller, retval will act as a regular local variable.
 
     null can be used as a return type to indicate no return
@@ -336,7 +400,7 @@ null println(Object value){
 
 /*      MEMORY MANAGEMENT     */
 /*
-    Kevlar uses a unique runtime content-identifier-ownership system to ensure memory safety.
+    Arolyme uses a unique runtime content-identifier-ownership system to ensure memory safety.
     Every memory content has an ID and an owner unless specifically opted out via the unsafe keyword.
     When the memory is deallocated, the memory content's ID will be set to an impossible value and then deallocated.
     When you assign a variable to a referenced variable, a copy pointer with a copy of the content ID is assigned.
@@ -416,7 +480,7 @@ newStr <~ "Hello World!";
 Process.allowReset();
 
 /*
-    Alternatively, Kevlar's standard library provide a special object that allows
+    Alternatively, Arolyme's standard library provide a special object that allows
     multiple objects to share the same content ID, and be deallocated together.
 */
 
